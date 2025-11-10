@@ -51,7 +51,7 @@ class RefreshTokenCommand extends Command
     {
         $query = ShopeeAccessToken::query();
 
-        $query->where('expires_at', '>', now());
+        $query->where('expires_at', '<', now()->addMinutes(25));
 
         return $query;
     }
