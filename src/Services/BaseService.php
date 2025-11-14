@@ -79,25 +79,28 @@ class BaseService
         }
 
         $url = $this->getUrl();
-        $method = $this->getMethod();
+        $method = strtolower($this->getMethod());
 
         if ($this->getRoute() == 'shop.get_info') {
             // dd($url, $this->getPayload());
         }
 
-        $response = $this->getClient();
+        // client padrão da lib
+        $baseClient = $this->getClient();
 
         if (app()->environment('local')) {
-            $response->withoutVerifying();
+            $baseClient->withoutVerifying();
         }
 
         $payload = $this->getPayload();
         $commonParameters = $this->getCommonParameters();
 
-        if (strtolower($method) != 'get') {
+        if ($method != 'get') {
+            // parâmetros comuns vão na query string
             $this->setQueryString(array_merge($commonParameters, $this->getQueryString()));
             $url = $this->getUrl();
         } else {
+            // GET → parâmetros comuns vão no payload
             $payload = array_merge($commonParameters, $payload);
             $this->setPayload($payload);
         }
@@ -106,12 +109,54 @@ class BaseService
             'shop_id' => $this->shopee->getShopId(),
             'action' => $this->serviceName . '::' . $this->methodName,
             'url' => $url,
-            'request' => $this->getPayload() && count($this->getPayload()) > 0 ? $this->getPayload() : null,
+            'request' => $this->getPayload() && count($this->getPayload()) > 0
+                ? $this->getPayload()
+                : null,
         ]);
 
-        // dd($url, $payload);
+        if ($this->getRoute() === 'order.upload_invoice_doc') {
 
-        $response = $response->$method($url, $this->getPayload());
+            $xml = $payload['file'] ?? null;
+            $filename = $payload['filename'] ?? 'invoice.xml';
+            $orderSn = $payload['order_sn'] ?? null;
+            $fileType = $payload['file_type'] ?? 4;
+
+            if (!$xml) {
+                throw new \RuntimeException('Campo "file" (XML) não informado no payload.');
+            }
+            if (!$orderSn) {
+                throw new \RuntimeException('Campo "order_sn" não informado no payload.');
+            }
+
+            // esses não vão como campos simples do formulário
+            unset($payload['file'], $payload['filename']);
+
+            // aqui, enviamos APENAS os mesmos campos que o seu cURL puro manda
+            $formFields = [
+                'order_sn' => (string) $orderSn,
+                'file_type' => (string) $fileType, // igual ao seu cURL ("4")
+            ];
+
+            // client LIMPO só com Accept JSON (sem Content-Type forçado)
+            $client = \Illuminate\Support\Facades\Http::acceptJson();
+
+            if (app()->environment('local')) {
+                $client->withoutVerifying();
+            }
+
+            // multipart/form-data com arquivo
+            $client = $client->attach(
+                'file',     // campo que a Shopee exige
+                $xml,       // conteúdo do XML
+                $filename   // nome do arquivo
+            );
+
+            $response = $client->post($url, $formFields);
+
+        } else {
+            // comportamento padrão para os outros endpoints
+            $response = $baseClient->$method($url, $this->getPayload());
+        }
 
         $response->throw(function (Response $response, RequestException $e) use ($request) {
             $result = $response->json();
