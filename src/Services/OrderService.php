@@ -102,6 +102,24 @@ class OrderService extends BaseService
         return null;
     }
 
+    public function uploadNota(string $order_sn, string $xml, int $file_type = 4)
+    {
+        $route = 'order.upload_invoice_doc';
+
+        $payload = [
+            'order_sn' => $order_sn,
+            'file_type' => 4,
+            'file' => $xml,           // XML cru, sem base64
+            'filename' => 'invoice.xml',  // opcional
+        ];
+
+        $response = $this->route($route)
+            ->payload($payload)
+            ->execute();
+
+        return $response;
+    }
+
     public function afterGetOrderListResponse(ShopeeRequest $request, ?array $result = [])
     {
         $order_list = data_get($result, 'response.order_list');
