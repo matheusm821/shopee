@@ -79,6 +79,7 @@ class BaseService
         }
 
         $url = $this->getUrl();
+
         $method = strtolower($this->getMethod());
 
         if ($this->getRoute() == 'shop.get_info') {
@@ -113,6 +114,7 @@ class BaseService
                 ? $this->getPayload()
                 : null,
         ]);
+
 
         if ($this->getRoute() === 'order.upload_invoice_doc') {
 
@@ -177,6 +179,27 @@ class BaseService
         });
 
         if ($response->successful()) {
+            if ($this->getRoute() === 'order.download_shipping_document') {
+
+                $body = $response->body(); // conteúdo binário do PDF
+                $contentType = $response->header('Content-Type', 'application/pdf');
+                $disposition = $response->header('Content-Disposition');
+
+                // tenta extrair filename do header Content-Disposition, se existir
+                $filename = 'shipping_document.pdf';
+                if ($disposition && preg_match('/filename="?([^"]+)"?/i', $disposition, $matches)) {
+                    $filename = $matches[1];
+                }
+
+                // você escolhe o formato que quer retornar para sua camada externa:
+                return [
+                    'filename' => $filename,
+                    'mime' => $contentType,
+                    'raw' => $body, // binário
+                    'base64' => base64_encode($body), // se quiser usar em outros lugares
+                ];
+            }
+
             $result = $response->json();
 
             $request->update([
