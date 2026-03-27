@@ -34,6 +34,18 @@ return [
         'payment' => [
             'get_escrow_detail' => '/api/v2/payment/get_escrow_detail',
         ],
+        'logistic' => [
+            'get_shipping_parameter' => '/api/v2/logistics/get_shipping_parameter',
+            'get_tracking_number' => '/api/v2/logistics/get_tracking_number',
+            'ship_order' => 'POST /api/v2/logistics/ship_order',
+            'batch_ship_order' => 'POST /api/v2/logistics/batch_ship_order',
+            'get_channel_list' => '/api/v2/logistics/get_channel_list',
+            'update_channel' => 'POST /api/v2/logistics/update_channel',
+            'get_address_list' => '/api/v2/logistics/get_address_list',
+            'set_address_config' => 'POST /api/v2/logistics/set_address_config',
+            'download_shipping_document' => 'POST /api/v2/logistics/download_shipping_document',
+            'get_shipping_document_result' => '/api/v2/logistics/get_shipping_document_result',
+        ],
         'product' => [
             'get_list' => '/api/v2/product/get_item_list',
             'get_base_info' => '/api/v2/product/get_item_base_info',
